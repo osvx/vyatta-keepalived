@@ -6,12 +6,12 @@
 #
 ### BEGIN INIT INFO
 # Provides:          keepalived
-# Required-Start:    $syslog $network
+# Required-Start:    $syslog $network $remote_fs
 # Required-Stop:     $syslog $network $remote_fs
-# Default-Start:     
-# Default-Stop:      0 1 6
-# Short-Description: Stops keepalived (start is done by vyatta cli)
-# Description:       Stops keepalived lvs loadbalancer
+# Default-Start:     2 3 4 5
+# Default-Stop:      1
+# Short-Description: Starts keepalived
+# Description:       Starts keepalived lvs loadbalancer
 ### END INIT INFO
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/keepalived
@@ -26,6 +26,10 @@ TMPFILES="/tmp/.vrrp /tmp/.healthcheckers"
 test -f $CONFIG || exit 0 
 test -f $DAEMON || exit 0
 
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
 case "$1" in
   start)
        	log_daemon_msg "Starting $DESC" "$NAME"
@@ -34,7 +38,7 @@ case "$1" in
        		test -e $file && test ! -L $file && rm $file
 	done
 	if start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
-               --exec $DAEMON; then
+               --exec $DAEMON -- $DAEMON_ARGS; then
 		log_end_msg 0
 	else
 		log_end_msg 1
@@ -62,10 +66,10 @@ case "$1" in
   	log_action_begin_msg "Restarting $DESC" "$NAME"
 
        	start-stop-daemon --stop --quiet --pidfile \
-		/var/run/$NAME.pid --exec $DAEMON || true
+		/var/run/$NAME.pid --exec $DAEMON || true 
        sleep 1
        if start-stop-daemon --start --quiet --pidfile \
-               /var/run/$NAME.pid --exec $DAEMON; then
+               /var/run/$NAME.pid --exec $DAEMON -- $DAEMON_ARGS; then
 	       log_end_msg 0
 	else
 		log_end_msg 1
